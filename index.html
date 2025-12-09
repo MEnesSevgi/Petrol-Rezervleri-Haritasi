@@ -126,7 +126,7 @@
         </div>
 
         <!-- Mobilde görünür toggle butonu -->
-        <button id="toggleWikiBtn">Vikipedi Gizle</button>
+        <button id="toggleWikiBtn">Wikipedia Gizle</button>
     </div>
 
     <div id="map"></div>
@@ -1152,10 +1152,10 @@
         function toggleWiki() {
             if (wikiDiv.style.display === 'none') {
                 wikiDiv.style.display = 'block';
-                toggleWikiBtn.textContent = 'Vikipedi Gizle';
+                toggleWikiBtn.textContent = 'Wikipedia Gizle';
             } else {
                 wikiDiv.style.display = 'none';
-                toggleWikiBtn.textContent = 'Vikipedi Göster';
+                toggleWikiBtn.textContent = 'Wikipedia Göster';
             }
             updateMapSize();
         }
@@ -1180,7 +1180,7 @@
             if (window.innerWidth <= 768) {
                 toggleWikiBtn.style.display = 'inline-block';
                 wikiDiv.style.display = 'block';
-                toggleWikiBtn.textContent = 'Vikipedi Gizle';
+                toggleWikiBtn.textContent = 'Wikipedia Gizle';
                 updateMapSize();
             } else {
                 toggleWikiBtn.style.display = 'none';
