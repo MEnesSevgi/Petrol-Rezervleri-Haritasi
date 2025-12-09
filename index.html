@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Ülkelerin Petrol Rezervleri Haritası (US EIA, 2023, Wikipedia)</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ülkelerin Petrol Rezervleri Haritası (US EIA, 2023, Wikipedia)</title>
+    
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.label@0.2.1/dist/leaflet.label.css" />
+    
+    <style>
+        html, body {
+            margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            flex-direction: row;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1100;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+            font-size: 16px;
+            max-width: 320px;
+        }
+        #map, #wiki {
+            height: 100vh;
+            width: 50vw;
+            box-sizing: border-box;
+        }
+        #map {
+            border-right: 2px solid #ccc;
+            background-color: #f0f0f0; 
+        }
+        #wiki iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        select { width: 100%; font-size: 16px; margin-top: 8px; padding: 4px; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        #rangeValue { text-align: center; font-weight: normal; margin-top: 4px; padding: 4px 0; }
+        #filterContainer { display: flex; align-items: center; margin-top: 8px; }
+        #reserveFilter { flex-grow: 1; margin: 0 5px; height: 8px; -webkit-appearance: none; background: #ddd; border-radius: 4px; }
+        #reserveFilter::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #333; cursor: pointer; border: 2px solid white; box-shadow: 0 0 2px rgba(0,0,0,0.5); }
+        .filter-button { background-color: #f0f0f0; border: 1px solid #ccc; color: #333; padding: 5px 10px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; cursor: pointer; border-radius: 4px; transition: background-color 0.1s; width: 30px; height: 30px; line-height: 1; box-sizing: border-box; font-weight: bold; }
+        .filter-button:hover { background-color: #e0e0e0; }
+        .country-label-marker {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-weight: 500;
+            color: #1a1a7b; 
+            font-size: 12px;
+            pointer-events: none; 
+            white-space: nowrap;
+            border: 1px solid #1a1a7b;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            user-select: none;
+        }
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #controls { position: fixed; top: 0; left: 0; width: 100%; box-sizing: border-box; border-radius: 0; padding: 10px 15px; text-align: center; font-size: 14px; z-index: 1200; max-width: none; }
+            #map, #wiki { width: 100vw; height: calc(50vh - 25px); }
+            #map { border-right: none; border-bottom: 2px solid #ccc; margin-top: 150px; }
+            #wiki { height: calc(50vh - 25px); }
+            .leaflet-control-zoom { top: 170px !important; }
+
+            /* Mobilde toggle butonu görünür */
+            #toggleWikiBtn {
+                display: inline-block !important;
+                padding: 8px 12px;
+                font-size: 14px;
+                cursor: pointer;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+                background-color: #f0f0f0;
+                transition: background-color 0.2s;
+                margin-top: 10px;
+            }
+            #toggleWikiBtn:hover {
+                background-color: #e0e0e0;
+            }
+        }
+        /* Masaüstünde buton gizli */
+        #toggleWikiBtn {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <div><b>Ülkelerin Petrol Rezervleri Haritası (US EIA, 2023, Wikipedia)</b></div>
+        <label for="countrySelect">Ülke Seçin:</label>
+        <select id="countrySelect">
+            <option value="">-- Bir ülke seçin --</option>
+        </select>
+
+        <label for="reserveFilter">Minimum Rezerv: <span id="rangeValue">0</span></label>
+        <div id="filterContainer">
+            <button class="filter-button" id="decreaseReserve">-</button>
+            <input type="range" id="reserveFilter" min="0" max="100" step="5" value="0" />
+            <button class="filter-button" id="increaseReserve">+</button>
+        </div>
+
+        <!-- Mobilde görünür toggle butonu -->
+        <button id="toggleWikiBtn">Vikipedi Gizle</button>
+    </div>
+
+    <div id="map"></div>
+    <div id="wiki">
+        <iframe
+            id="wikiFrame"
+            src="https://tr.wikipedia.org/wiki/Kan%C4%B1tlanm%C4%B1%C5%9F_petrol_rezervlerine_g%C3%B6re_%C3%BClkelerin_listesi" 
+            title="Wikipedia"
+            sandbox="allow-same-origin allow-scripts allow-popups"
+        ></iframe>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script> 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.label@0.2.1/dist/leaflet.label.js"></script>
+
+    <script>
+        let countries = [
+             {
+    "name": "Venezuela",
+    "reserves": 304000,
+    "lat": 6.42375,
+    "lng": -66.58973,
+    "wiki": "Venezuela",
+    "info": "1. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok yüksek.\""
+  },
+  {
+    "name": "Suudi Arabistan",
+    "reserves": 262000,
+    "lat": 24.7136,
+    "lng": 46.6753,
+    "wiki": "Suudi_Arabistan",
+    "info": "2. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok yüksek.\""
+  },
+  {
+    "name": "İran",
+    "reserves": 209000,
+    "lat": 32.4279,
+    "lng": 53.688,
+    "wiki": "İran",
+    "info": "3. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok yüksek.\""
+  },
+  {
+    "name": "Kanada",
+    "reserves": 172500,
+    "lat": 56.1304,
+    "lng": -106.3468,
+    "wiki": "Kanada",
+    "info": "4. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok yüksek.\""
+  },
+  {
+    "name": "Irak",
+    "reserves": 145000,
+    "lat": 33.3152,
+    "lng": 44.3661,
+    "wiki": "Irak",
+    "info": "5. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok yüksek.\""
+  },
+  {
+    "name": "Birleşik Arap Emirlikleri",
+    "reserves": 107000,
+    "lat": 23.4241,
+    "lng": 53.8478,
+    "wiki": "Birleşik_Arap_Emirlikleri",
+    "info": "6. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Kuveyt",
+    "reserves": 102000,
+    "lat": 29.3759,
+    "lng": 47.9774,
+    "wiki": "Kuveyt",
+    "info": "7. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Rusya",
+    "reserves": 80000,
+    "lat": 61.524,
+    "lng": 105.3188,
+    "wiki": "Rusya",
+    "info": "8. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Amerika Birleşik Devletleri",
+    "reserves": 61000,
+    "lat": 37.0902,
+    "lng": -95.7129,
+    "wiki": "Amerika_Birleşik_Devletleri",
+    "info": "9. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Libya",
+    "reserves": 48000,
+    "lat": 26.3351,
+    "lng": 17.2283,
+    "wiki": "Libya",
+    "info": "10. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Nijerya",
+    "reserves": 37000,
+    "lat": 9.082,
+    "lng": 8.6753,
+    "wiki": "Nijerya",
+    "info": "11. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Kazakistan",
+    "reserves": 30000,
+    "lat": 48.0196,
+    "lng": 66.9237,
+    "wiki": "Kazakistan",
+    "info": "12. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi yüksek.\""
+  },
+  {
+    "name": "Çin",
+    "reserves": 26022,
+    "lat": 35.8617,
+    "lng": 104.1954,
+    "wiki": "Çin",
+    "info": "13. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Katar",
+    "reserves": 25244,
+    "lat": 25.3548,
+    "lng": 51.1839,
+    "wiki": "Katar",
+    "info": "14. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Brezilya",
+    "reserves": 12714,
+    "lat": -14.235,
+    "lng": -51.9253,
+    "wiki": "Brezilya",
+    "info": "15. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Cezayir",
+    "reserves": 12200,
+    "lat": 28.0339,
+    "lng": 1.6596,
+    "wiki": "Cezayir",
+    "info": "16. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Ekvador",
+    "reserves": 8273,
+    "lat": -1.8312,
+    "lng": -78.1834,
+    "wiki": "Ekvador",
+    "info": "17. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Norveç",
+    "reserves": 8122,
+    "lat": 60.472,
+    "lng": 8.4689,
+    "wiki": "Norveç",
+    "info": "18. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Angola",
+    "reserves": 7783,
+    "lat": -11.2027,
+    "lng": 17.8739,
+    "wiki": "Angola",
+    "info": "19. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Azerbaycan",
+    "reserves": 7000,
+    "lat": 40.1431,
+    "lng": 47.5769,
+    "wiki": "Azerbaycan",
+    "info": "20. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Meksika",
+    "reserves": 5786,
+    "lat": 23.6345,
+    "lng": -102.5528,
+    "wiki": "Meksika",
+    "info": "21. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Umman",
+    "reserves": 5373,
+    "lat": 21.4735,
+    "lng": 55.9754,
+    "wiki": "Umman",
+    "info": "22. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Sudan",
+    "reserves": 5000,
+    "lat": 12.8628,
+    "lng": 30.2176,
+    "wiki": "Sudan",
+    "info": "23. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Hindistan",
+    "reserves": 4604,
+    "lat": 20.5937,
+    "lng": 78.9629,
+    "wiki": "Hindistan",
+    "info": "24. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Vietnam",
+    "reserves": 4400,
+    "lat": 14.0583,
+    "lng": 108.2772,
+    "wiki": "Vietnam",
+    "info": "25. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Malezya",
+    "reserves": 3600,
+    "lat": 4.2105,
+    "lng": 101.9758,
+    "wiki": "Malezya",
+    "info": "26. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Mısır",
+    "reserves": 3300,
+    "lat": 26.8206,
+    "lng": 30.8025,
+    "wiki": "Mısır",
+    "info": "27. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Yemen",
+    "reserves": 3000,
+    "lat": 15.5527,
+    "lng": 48.5164,
+    "wiki": "Yemen",
+    "info": "28. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi orta seviyede.\""
+  },
+  {
+    "name": "Kongo Cumhuriyeti",
+    "reserves": 2882,
+    "lat": -0.228,
+    "lng": 15.8277,
+    "wiki": "Kongo_Cumhuriyeti",
+    "info": "29. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Birleşik Krallık",
+    "reserves": 2500,
+    "lat": 55.3781,
+    "lng": -3.436,
+    "wiki": "Birleşik_Krallık",
+    "info": "30. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Suriye",
+    "reserves": 2500,
+    "lat": 34.8021,
+    "lng": 38.9968,
+    "wiki": "Suriye",
+    "info": "31. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Arjantin",
+    "reserves": 2482,
+    "lat": -38.4161,
+    "lng": -63.6167,
+    "wiki": "Arjantin",
+    "info": "32. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Endonezya",
+    "reserves": 2480,
+    "lat": -0.7893,
+    "lng": 113.9213,
+    "wiki": "Endonezya",
+    "info": "33. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Avustralya",
+    "reserves": 2446,
+    "lat": -25.2744,
+    "lng": 133.7751,
+    "wiki": "Avustralya",
+    "info": "34. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Kolombiya",
+    "reserves": 2036,
+    "lat": 4.5709,
+    "lng": -74.2973,
+    "wiki": "Kolombiya",
+    "info": "35. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Gabon",
+    "reserves": 2000,
+    "lat": -0.8037,
+    "lng": 11.6094,
+    "wiki": "Gabon",
+    "info": "36. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Çad",
+    "reserves": 1500,
+    "lat": 15.4542,
+    "lng": 18.7322,
+    "wiki": "Çad",
+    "info": "37. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Brunei",
+    "reserves": 1100,
+    "lat": 4.5353,
+    "lng": 114.7277,
+    "wiki": "Brunei",
+    "info": "38. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Ekvator Ginesi",
+    "reserves": 1100,
+    "lat": 1.6508,
+    "lng": 10.2679,
+    "wiki": "Ekvator_Ginesi",
+    "info": "39. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Peru",
+    "reserves": 858,
+    "lat": -9.19,
+    "lng": -75.0152,
+    "wiki": "Peru",
+    "info": "40. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Gana",
+    "reserves": 660,
+    "lat": 7.9465,
+    "lng": -1.0232,
+    "wiki": "Gana",
+    "info": "41. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Romanya",
+    "reserves": 600,
+    "lat": 45.9432,
+    "lng": 24.9668,
+    "wiki": "Romanya",
+    "info": "42. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Türkmenistan",
+    "reserves": 600,
+    "lat": 38.9697,
+    "lng": 59.5563,
+    "wiki": "Türkmenistan",
+    "info": "43. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Özbekistan",
+    "reserves": 594,
+    "lat": 41.3775,
+    "lng": 64.5853,
+    "wiki": "Özbekistan",
+    "info": "44. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Pakistan",
+    "reserves": 540,
+    "lat": 30.3753,
+    "lng": 69.3451,
+    "wiki": "Pakistan",
+    "info": "45. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "İtalya",
+    "reserves": 497,
+    "lat": 41.8719,
+    "lng": 12.5674,
+    "wiki": "İtalya",
+    "info": "46. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Danimarka",
+    "reserves": 441,
+    "lat": 56.2639,
+    "lng": 9.5018,
+    "wiki": "Danimarka",
+    "info": "47. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Tunus",
+    "reserves": 425,
+    "lat": 33.8869,
+    "lng": 9.5375,
+    "wiki": "Tunus",
+    "info": "48. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi az.\""
+  },
+  {
+    "name": "Ukrayna",
+    "reserves": 395,
+    "lat": 48.3794,
+    "lng": 31.1656,
+    "wiki": "Ukrayna",
+    "info": "49. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Türkiye",
+    "reserves": 366,
+    "lat": 38.9637,
+    "lng": 35.2433,
+    "wiki": "Türkiye",
+    "info": "50. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Tayland",
+    "reserves": 252,
+    "lat": 15.8700,
+    "lng": 100.9925,
+    "wiki": "Tayland",
+    "info": "51. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Trinidad ve Tobago",
+    "reserves": 242,
+    "lat": 10.6918,
+    "lng": -61.2225,
+    "wiki": "Trinidad_ve_Tobago",
+    "info": "52. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Bolivya",
+    "reserves": 240,
+    "lat": -16.2902,
+    "lng": -63.5887,
+    "wiki": "Bolivya",
+    "info": "53. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Kamerun",
+    "reserves": 200,
+    "lat": 7.3697,
+    "lng": 12.3547,
+    "wiki": "Kamerun",
+    "info": "54. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Belarus",
+    "reserves": 198,
+    "lat": 53.7098,
+    "lng": 27.9534,
+    "wiki": "Belarus",
+    "info": "55. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Bahreyn",
+    "reserves": 186,
+    "lat": 26.0667,
+    "lng": 50.5577,
+    "wiki": "Bahreyn",
+    "info": "56. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Kongo Demokratik Cumhuriyeti",
+    "reserves": 180,
+    "lat": -4.0383,
+    "lng": 21.7587,
+    "wiki": "Kongo_Demokratik_Cumhuriyeti",
+    "info": "57. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Papua Yeni Gine",
+    "reserves": 159,
+    "lat": -6.314993,
+    "lng": 143.95555,
+    "wiki": "Papua_Yeni_Gine",
+    "info": "58. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Arnavutluk",
+    "reserves": 150,
+    "lat": 41.1533,
+    "lng": 20.1683,
+    "wiki": "Arnavutluk",
+    "info": "59. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Şili",
+    "reserves": 150,
+    "lat": -35.6751,
+    "lng": -71.543,
+    "wiki": "Şili",
+    "info": "60. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Nijer",
+    "reserves": 150,
+    "lat": 17.6078,
+    "lng": 8.0817,
+    "wiki": "Nijer",
+    "info": "61. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "İspanya",
+    "reserves": 150,
+    "lat": 40.4637,
+    "lng": -3.7492,
+    "wiki": "İspanya",
+    "info": "62. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Myanmar",
+    "reserves": 139,
+    "lat": 21.9162,
+    "lng": 95.9559,
+    "wiki": "Myanmar",
+    "info": "63. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Filipinler",
+    "reserves": 138,
+    "lat": 12.8797,
+    "lng": 121.7740,
+    "wiki": "Filipinler",
+    "info": "64. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Hollanda",
+    "reserves": 137,
+    "lat": 52.1326,
+    "lng": 5.2913,
+    "wiki": "Hollanda",
+    "info": "65. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Küba",
+    "reserves": 124,
+    "lat": 21.5218,
+    "lng": -77.7812,
+    "wiki": "Küba",
+    "info": "66. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Almanya",
+    "reserves": 115,
+    "lat": 51.1657,
+    "lng": 10.4515,
+    "wiki": "Almanya",
+    "info": "67. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Polonya",
+    "reserves": 113,
+    "lat": 51.9194,
+    "lng": 19.1451,
+    "wiki": "Polonya",
+    "info": "68. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Fildişi Sahili",
+    "reserves": 100,
+    "lat": 7.539989,
+    "lng": -5.54708,
+    "wiki": "Fildişi_Sahili",
+    "info": "69. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Surinam",
+    "reserves": 89,
+    "lat": 3.9193,
+    "lng": -56.0278,
+    "wiki": "Surinam",
+    "info": "70. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Guatemala",
+    "reserves": 86,
+    "lat": 15.7835,
+    "lng": -90.2308,
+    "wiki": "Guatemala",
+    "info": "71. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Sırbistan",
+    "reserves": 77,
+    "lat": 44.0165,
+    "lng": 21.0059,
+    "wiki": "Sırbistan",
+    "info": "72. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Hırvatistan",
+    "reserves": 71,
+    "lat": 45.1,
+    "lng": 15.2,
+    "wiki": "Hırvatistan",
+    "info": "73. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Fransa",
+    "reserves": 61,
+    "lat": 46.2276,
+    "lng": 2.2137,
+    "wiki": "Fransa",
+    "info": "74. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Japonya",
+    "reserves": 44,
+    "lat": 36.2048,
+    "lng": 138.2529,
+    "wiki": "Japonya",
+    "info": "75. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Yeni Zelanda",
+    "reserves": 40,
+    "lat": -40.9006,
+    "lng": 174.886,
+    "wiki": "Yeni_Zelanda",
+    "info": "76. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Kırgızistan",
+    "reserves": 40,
+    "lat": 41.2044,
+    "lng": 74.7661,
+    "wiki": "Kırgızistan",
+    "info": "77. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Avusturya",
+    "reserves": 35,
+    "lat": 47.5162,
+    "lng": 14.5501,
+    "wiki": "Avusturya",
+    "info": "78. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Gürcistan",
+    "reserves": 35,
+    "lat": 42.3154,
+    "lng": 43.3569,
+    "wiki": "Gürcistan",
+    "info": "79. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Bangladeş",
+    "reserves": 28,
+    "lat": 23.685,
+    "lng": 90.3563,
+    "wiki": "Bangladeş",
+    "info": "80. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Moritanya",
+    "reserves": 20,
+    "lat": 21.0079,
+    "lng": -10.9408,
+    "wiki": "Moritanya",
+    "info": "81. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Bulgaristan",
+    "reserves": 15,
+    "lat": 42.7339,
+    "lng": 25.4858,
+    "wiki": "Bulgaristan",
+    "info": "82. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Çekya",
+    "reserves": 15,
+    "lat": 49.8175,
+    "lng": 15.473,
+    "wiki": "Çekya",
+    "info": "83. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Güney Afrika Cumhuriyeti",
+    "reserves": 15,
+    "lat": -30.5595,
+    "lng": 22.9375,
+    "wiki": "Güney_Afrika_Cumhuriyeti",
+    "info": "84. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "İsrail",
+    "reserves": 12,
+    "lat": 31.0461,
+    "lng": 34.8516,
+    "wiki": "İsrail",
+    "info": "85. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Macaristan",
+    "reserves": 12,
+    "lat": 47.1625,
+    "lng": 19.5033,
+    "wiki": "Macaristan",
+    "info": "86. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Litvanya",
+    "reserves": 12,
+    "lat": 55.1694,
+    "lng": 23.8813,
+    "wiki": "Litvanya",
+    "info": "87. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Tacikistan",
+    "reserves": 12,
+    "lat": 38.861,
+    "lng": 71.2761,
+    "wiki": "Tacikistan",
+    "info": "88. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Yunanistan",
+    "reserves": 10,
+    "lat": 39.0742,
+    "lng": 21.8243,
+    "wiki": "Yunanistan",
+    "info": "89. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Slovakya",
+    "reserves": 9,
+    "lat": 48.669,
+    "lng": 19.699,
+    "wiki": "Slovakya",
+    "info": "90. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Benin",
+    "reserves": 8,
+    "lat": 9.3077,
+    "lng": 2.3158,
+    "wiki": "Benin",
+    "info": "91. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Belize",
+    "reserves": 6,
+    "lat": 17.1899,
+    "lng": -88.4976,
+    "wiki": "Belize",
+    "info": "92. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Tayvan",
+    "reserves": 2,
+    "lat": 23.6978,
+    "lng": 120.9605,
+    "wiki": "Tayvan",
+    "info": "93. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Barbados",
+    "reserves": 1,
+    "lat": 13.1939,
+    "lng": -59.5432,
+    "wiki": "Barbados",
+    "info": "94. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Ürdün",
+    "reserves": 1,
+    "lat": 30.5852,
+    "lng": 36.2384,
+    "wiki": "Ürdün",
+    "info": "95. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Fas",
+    "reserves": 0.6,
+    "lat": 31.7917,
+    "lng": -7.0926,
+    "wiki": "Fas",
+    "info": "96. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  },
+  {
+    "name": "Etiyopya",
+    "reserves": 0.4,
+    "lat": 9.145,
+    "lng": 40.4897,
+    "wiki": "Etiyopya",
+    "info": "97. sırada petrol rezervine sahip ülkedir. \"Petrol rezervi çok az.\""
+  }
+        ];
+
+        function getReserveLevel(reserves) {
+            if (reserves >= 5000) return "çok yüksek";
+            if (reserves >= 2000) return "yüksek";
+            if (reserves >= 500) return "orta seviye";
+            if (reserves >= 100) return "düşük seviye";
+            return "düşük seviye";
+        }
+
+        countries.sort((a, b) => b.reserves - a.reserves); 
+        countries = countries.map((country, index) => {
+            const rank = index + 1;
+            const level = getReserveLevel(country.reserves);
+            country.info = `${rank}. sıradaki petrol rezervine sahiptir. Petrol rezerv seviyesi ${level}dir.`;
+            return country;
+        });
+
+        const map = L.map('map').setView([20, 0], 2);
+
+        L.tileLayer('https://{s}.tilep.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap katkıda bulunanları'
+        }).addTo(map);
+
+        const baseUrl = 'https://menessevgi.github.io/altlik-harita/';
+
+        const dataMarkers = L.featureGroup().addTo(map);
+        const countryLabels = L.featureGroup().addTo(map);
+        let geoLayer;
+
+        const countryGeojsonStyle = {
+            "color": "#000000", 
+            "weight": 0.8,
+            "fillColor": "#cccccc", 
+            "fillOpacity": 0.9 
+        };
+
+        async function loadCountryBorders() {
+            const geojsonUrl = baseUrl + "ne_10m_admin_0_countries_tur.json";
+            try {
+                const response = await fetch(geojsonUrl);
+                if (!response.ok) throw new Error(`GeoJSON ülke sınırları yüklenemedi: ${response.statusText}`);
+                const geojson = await response.json();
+
+                geoLayer = L.geoJSON(geojson, {
+                    style: countryGeojsonStyle,
+                    onEachFeature: (feature, layer) => {}
+                }).addTo(map);
+
+                geoLayer.bringToBack();
+
+                geoLayer.eachLayer(layer => {
+                    const feature = layer.feature;
+                    if (feature.properties && feature.properties.NAME) {
+                        let center;
+                        try {
+                            center = turf.centroid(feature).geometry.coordinates;
+                            center = [center[1], center[0]]; 
+                        } catch {
+                            center = layer.getBounds().getCenter();
+                        }
+
+                        const countryName = feature.properties.NAME;
+
+                        const labelIcon = L.divIcon({
+                            className: 'country-label-marker',
+                            html: countryName,
+                            iconSize: [120, 20],
+                            iconAnchor: [60, 10]
+                        });
+
+                        L.marker(center, { 
+                            icon: labelIcon, 
+                            interactive: false,
+                            zIndexOffset: 1000
+                        }).addTo(countryLabels);
+                    }
+                });
+
+                dataMarkers.bringToFront();
+                countryLabels.bringToFront();
+
+            } catch (error) {
+                console.error("GeoJSON ülke sınırları yüklenirken hata oluştu:", error);
+            }
+        }
+
+        loadCountryBorders();
+
+        let markers = [];
+        let currentFilteredCountries = countries.slice();
+
+        const maxReserve = 304000; 
+        const minReserveGlobal = countries[countries.length - 1].reserves; 
+        const logMax = Math.log10(maxReserve + 1);
+        const logMin = Math.log10(minReserveGlobal + 1);
+
+        const FIXED_RADIUS = 9;
+
+        function getColor(reserve) {
+            const logReserve = Math.log10(reserve + 1);
+            const normalized = (logReserve - logMin) / (logMax - logMin);
+            const maxL = 100; 
+            const minL = 0; 
+            const lightness = maxL - (normalized * (maxL - minL));
+            const hue = 0; 
+            const saturation = 0;
+
+            function hslToHex(h, s, l) {
+                l /= 100;
+                const a = s * Math.min(l, 1 - l) / 100;
+                const f = n => {
+                    const k = (n + h / 30) % 12;
+                    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                    return Math.round(255 * color).toString(16).padStart(2, '0');
+                };
+                return `#${f(0)}${f(8)}${f(4)}`;
+            }
+            return hslToHex(hue, saturation, lightness);
+        }
+
+        function createMarkers(filteredCountries) {
+            dataMarkers.clearLayers();
+            markers = [];
+
+            filteredCountries.forEach((country) => {
+                const marker = L.circleMarker([country.lat, country.lng], {
+                    radius: FIXED_RADIUS,
+                    fillColor: getColor(country.reserves),
+                    color: '#333',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillOpacity: 0.9,
+                    zIndexOffset: 750
+                });
+
+                const popupContent = `
+                    <div style="font-family: Arial;">
+                        <b>${country.name}</b> (${country.reserves.toLocaleString()} milyon varil)<br>
+                        <i style="font-size: 12px;">${country.info || ''}</i><br>
+                        <a href="https://tr.wikipedia.org/wiki/${country.wiki}" target="_blank" rel="noopener noreferrer">Wikipedia'da Gör</a>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+
+                marker.on('click', () => {
+                    select.value = country.name;
+                    map.setView([country.lat, country.lng], 5);
+                    marker.openPopup();
+                });
+
+                marker.addTo(dataMarkers);
+                markers.push(marker);
+            });
+
+            dataMarkers.bringToFront();
+            countryLabels.bringToFront();
+        }
+
+        const select = document.getElementById('countrySelect');
+        const reserveFilter = document.getElementById('reserveFilter');
+        const rangeValue = document.getElementById('rangeValue');
+        const decreaseButton = document.getElementById('decreaseReserve');
+        const increaseButton = document.getElementById('increaseReserve');
+        const toggleWikiBtn = document.getElementById('toggleWikiBtn');
+        const wikiDiv = document.getElementById('wiki');
+        const mapDiv = document.getElementById('map');
+
+        function updateSelect(filteredCountries) {
+            select.innerHTML = '<option value="">-- Bir ülke seçin --</option>';
+            filteredCountries.sort((a, b) => b.reserves - a.reserves);
+            filteredCountries.forEach((country, index) => {
+                const option = document.createElement('option');
+                option.value = country.name;
+                option.textContent = `${index + 1}. ${country.name} (${country.reserves.toLocaleString()} milyon varil)`;
+                select.appendChild(option);
+            });
+            select.scrollTop = 0;
+        }
+
+        function sliderToReserve(sliderVal) {
+            if (sliderVal == 0) return 0;
+            const maxReserveForLog = 304000; 
+            const minLog = 0;
+            const maxLog = Math.log10(maxReserveForLog + 1);
+            const scale = sliderVal / 100;
+            const valLog = minLog + scale * (maxLog - minLog);
+            return Math.floor(Math.pow(10, valLog) - 1); 
+        }
+
+        function formatReserve(val) {
+            if (val < 1000) return val.toLocaleString() + " milyon varil";
+            return (val / 1000).toFixed(1).toLocaleString() + " milyar varil";
+        }
+
+        function applyFilter() {
+            const sliderVal = parseInt(reserveFilter.value);
+            const minReserve = sliderToReserve(sliderVal);
+            rangeValue.textContent = formatReserve(minReserve);
+
+            currentFilteredCountries = countries.filter(c => c.reserves >= minReserve);
+
+            createMarkers(currentFilteredCountries);
+            updateSelect(currentFilteredCountries);
+        }
+
+        function updateMapSize() {
+            if (window.innerWidth <= 768) {
+                if (wikiDiv.style.display === 'none') {
+                    // Wiki gizli, harita tam ekran yüksekliğinde
+                    mapDiv.style.height = 'calc(100vh - 150px)'; // controls yüksekliği gibi ayarlayın
+                    mapDiv.style.width = '100vw';
+                } else {
+                    // Wiki görünür, harita yarım ekran
+                    mapDiv.style.height = 'calc(50vh - 25px)';
+                    mapDiv.style.width = '100vw';
+                }
+            } else {
+                // Masaüstü, eski haline dön
+                mapDiv.style.height = '100vh';
+                mapDiv.style.width = '50vw';
+                wikiDiv.style.display = 'block'; // wiki her zaman görünür
+                toggleWikiBtn.style.display = 'none';
+            }
+            map.invalidateSize(); // Leaflet harita boyut güncellemesi
+        }
+
+        function toggleWiki() {
+            if (wikiDiv.style.display === 'none') {
+                wikiDiv.style.display = 'block';
+                toggleWikiBtn.textContent = 'Vikipedi Gizle';
+            } else {
+                wikiDiv.style.display = 'none';
+                toggleWikiBtn.textContent = 'Vikipedi Göster';
+            }
+            updateMapSize();
+        }
+
+        toggleWikiBtn.addEventListener('click', toggleWiki);
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                wikiDiv.style.display = 'block';
+                toggleWikiBtn.style.display = 'none';
+                updateMapSize();
+            } else {
+                toggleWikiBtn.style.display = 'inline-block';
+                if (!wikiDiv.style.display) {
+                    wikiDiv.style.display = 'block';
+                }
+                updateMapSize();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            if (window.innerWidth <= 768) {
+                toggleWikiBtn.style.display = 'inline-block';
+                wikiDiv.style.display = 'block';
+                toggleWikiBtn.textContent = 'Vikipedi Gizle';
+                updateMapSize();
+            } else {
+                toggleWikiBtn.style.display = 'none';
+                wikiDiv.style.display = 'block';
+                updateMapSize();
+            }
+        });
+
+        rangeValue.textContent = formatReserve(0);
+        currentFilteredCountries = countries.slice();
+        createMarkers(currentFilteredCountries);
+        updateSelect(currentFilteredCountries);
+
+        select.addEventListener('change', () => {
+            const selectedCountryName = select.value;
+            if (!selectedCountryName) {
+                map.setView([20, 0], 2);
+                markers.forEach(m => m.closePopup());
+                return;
+            }
+
+            const country = currentFilteredCountries.find(c => c.name === selectedCountryName);
+            if (!country) return;
+
+            map.setView([country.lat, country.lng], 5);
+
+            const marker = markers.find(m =>
+                m.getLatLng().lat === country.lat &&
+                m.getLatLng().lng === country.lng
+            );
+            if (marker) {
+                markers.forEach(m => m.closePopup());
+                marker.openPopup();
+            }
+        });
+
+        reserveFilter.addEventListener('input', applyFilter);
+
+        decreaseButton.addEventListener('click', () => {
+            let newVal = parseInt(reserveFilter.value) - 5;
+            if (newVal < 0) newVal = 0;
+            reserveFilter.value = newVal;
+            applyFilter();
+        });
+
+        increaseButton.addEventListener('click', () => {
+            let newVal = parseInt(reserveFilter.value) + 5;
+            if (newVal > 100) newVal = 100;
+            reserveFilter.value = newVal;
+            applyFilter();
+        });
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
